@@ -1,0 +1,133 @@
+﻿using HarmonyLib;
+using System.Reflection;
+using UnityEngine;
+using UnityEngine.Rendering.PostProcessing;
+
+namespace RiskOfWaitingRedux.Fixes;
+
+public static class PostProcessingCache
+{
+    private static string cacheDirectory;
+
+    public static void Init()
+    {
+        cacheDirectory = CacheHelpers.GetCacheDirectory("PostProcessingCache");
+        Directory.CreateDirectory(cacheDirectory);
+        RiskOfWaitingReduxPlugin.Harmony.PatchAll(typeof(PostProcessingCache));
+    }
+
+
+    [HarmonyPrefix, HarmonyPatch(typeof(PostProcessManager), nameof(PostProcessManager.ReloadBaseTypes))]
+    private static bool ReloadBaseTypesWithCache(PostProcessManager __instance)
+    {
+        RiskOfWaitingReduxPlugin.Logger.LogMessage("Attempt ReloadBaseTypes");
+        __instance.CleanBaseTypes();
+
+        Assembly postProcessingAssembly = typeof(PostProcessEffectSettings).Assembly;
+        HandleAssembly(__instance, postProcessingAssembly);
+        
+        string postProcessingAssemblyName = postProcessingAssembly.GetName().Name;
+
+        foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            if (CacheHelpers.IsLikelyMMHOOKAssembly(assembly))
+            {
+                continue;
+            }
+            foreach (var referenceAssemblyName in assembly.GetReferencedAssemblies())
+            {
+                if (referenceAssemblyName.Name == postProcessingAssemblyName)
+                {
+                    HandleAssembly(__instance, assembly);
+                    break;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void RegisterSettingsType(PostProcessManager ppManager, Type settingsType, PostProcessAttribute ppAttribute)
+    {
+        ppManager.settingsTypes.Add(settingsType, ppAttribute);
+        PostProcessEffectSettings baseSettings = (PostProcessEffectSettings)ScriptableObject.CreateInstance(settingsType);
+        baseSettings.SetAllOverridesTo(state: true, excludeEnabled: false);
+        ppManager.m_BaseSettings.Add(baseSettings);
+    }
+
+    private static void HandleAssembly(PostProcessManager ppManager, Assembly assembly)
+    {
+        string cachePath = Path.Combine(cacheDirectory, assembly.FullName);
+
+        if (!TryLoadFromCache(ppManager, assembly, cachePath))
+        {
+            CreateCache(ppManager, assembly, cachePath);
+        }
+    }
+
+    private static void CreateCache(PostProcessManager ppManager, Assembly assembly, string cachePath)
+    {
+        RiskOfWaitingReduxPlugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
+
+        using FileStream fileStream = File.OpenWrite(cachePath);
+        using BinaryWriter writer = new BinaryWriter(fileStream);
+
+        writer.WriteGuid(assembly.ManifestModule.ModuleVersionId);
+
+        List<Type> settingsTypes = RegisterSettingsTypesInAssembly(ppManager, assembly);
+
+        writer.Write(settingsTypes.Count);
+        foreach (Type settingsType in settingsTypes)
+        {
+            writer.Write(settingsType.FullName);
+        }
+    }
+
+    private static List<Type> RegisterSettingsTypesInAssembly(PostProcessManager ppManager, Assembly assembly)
+    {
+        List<Type> settingsTypes = [];
+        foreach (var type in assembly.GetTypes())
+        {
+            if (!type.IsSubclassOf(typeof(PostProcessEffectSettings)) || type.IsAbstract)
+            {
+                continue;
+            }
+            PostProcessAttribute ppAttribute = type.GetCustomAttribute<PostProcessAttribute>(false);
+            if (ppAttribute is null)
+            {
+                continue;
+            }
+
+            settingsTypes.Add(type);
+            RegisterSettingsType(ppManager, type, ppAttribute);
+        }
+        return settingsTypes;
+    }
+
+    private static bool TryLoadFromCache(PostProcessManager ppManager, Assembly assembly, string cachePath)
+    {
+        if (!File.Exists(cachePath))
+        {
+            RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has no cache");
+            return false;
+        }
+        using FileStream fileStream = File.OpenRead(cachePath);
+        using BinaryReader reader = new BinaryReader(fileStream);
+
+        Guid cachedVersionId = reader.ReadGuid();
+        if (assembly.ManifestModule.ModuleVersionId != cachedVersionId)
+        {
+            RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
+            return false;
+        }
+
+        RiskOfWaitingReduxPlugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
+        int settingsTypesCount = reader.ReadInt32();
+        for (int i = 0; i < settingsTypesCount; i++)
+        {
+            string typeName = reader.ReadString();
+            Type settingsType = assembly.GetType(typeName);
+            RegisterSettingsType(ppManager, settingsType, settingsType.GetCustomAttribute<PostProcessAttribute>(false));
+        }
+        return true;
+    }
+}
