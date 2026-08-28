@@ -33,6 +33,7 @@ public class RiskOfWaitingReduxPlugin : BaseUnityPlugin
 
         Init();
         PostProcessingCache.Init();
+        SearchableAttributeCache.Init();
         /*TestingTheWaters.Init();
         PostProcessingFix.Init();
         AchievementManagerFix.Init();

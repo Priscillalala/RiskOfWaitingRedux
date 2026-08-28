@@ -18,7 +18,7 @@ public static class PostProcessingCache
 
 
     [HarmonyPrefix, HarmonyPatch(typeof(PostProcessManager), nameof(PostProcessManager.ReloadBaseTypes))]
-    private static bool ReloadBaseTypesWithCache(PostProcessManager __instance)
+    private static bool ReloadBaseTypesFromCache(PostProcessManager __instance)
     {
         RiskOfWaitingReduxPlugin.Logger.LogMessage("Attempt ReloadBaseTypes");
         __instance.CleanBaseTypes();
@@ -71,15 +71,11 @@ public static class PostProcessingCache
         using FileStream fileStream = File.OpenWrite(cachePath);
         using BinaryWriter writer = new BinaryWriter(fileStream);
 
-        writer.WriteGuid(assembly.ManifestModule.ModuleVersionId);
+        CacheHelpers.WriteAssemblyIdentifer(writer, assembly);
 
         List<Type> settingsTypes = RegisterSettingsTypesInAssembly(ppManager, assembly);
 
-        writer.Write(settingsTypes.Count);
-        foreach (Type settingsType in settingsTypes)
-        {
-            writer.Write(settingsType.FullName);
-        }
+        CacheHelpers.WriteTypeCollection(writer, settingsTypes);
     }
 
     private static List<Type> RegisterSettingsTypesInAssembly(PostProcessManager ppManager, Assembly assembly)
@@ -92,7 +88,7 @@ public static class PostProcessingCache
                 continue;
             }
             PostProcessAttribute ppAttribute = type.GetCustomAttribute<PostProcessAttribute>(false);
-            if (ppAttribute is null)
+            if (ppAttribute == null)
             {
                 continue;
             }
@@ -105,27 +101,35 @@ public static class PostProcessingCache
 
     private static bool TryLoadFromCache(PostProcessManager ppManager, Assembly assembly, string cachePath)
     {
-        if (!File.Exists(cachePath))
+        ICollection<Type> cachedSettingsTypes;
+
+        try
         {
-            RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has no cache");
+            if (!File.Exists(cachePath))
+            {
+                RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has no cache");
+                return false;
+            }
+            using FileStream fileStream = File.OpenRead(cachePath);
+            using BinaryReader reader = new BinaryReader(fileStream);
+
+            if (CacheHelpers.ReadAssemblyIsOutdated(reader, assembly))
+            {
+                RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
+                return false;
+            }
+
+            RiskOfWaitingReduxPlugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
+            cachedSettingsTypes = CacheHelpers.ReadTypeCollection(reader, assembly);
+        }
+        catch (Exception ex)
+        {
+            RiskOfWaitingReduxPlugin.Logger.LogError($"PostProcessingCache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
             return false;
         }
-        using FileStream fileStream = File.OpenRead(cachePath);
-        using BinaryReader reader = new BinaryReader(fileStream);
 
-        Guid cachedVersionId = reader.ReadGuid();
-        if (assembly.ManifestModule.ModuleVersionId != cachedVersionId)
+        foreach (var settingsType in cachedSettingsTypes)
         {
-            RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
-            return false;
-        }
-
-        RiskOfWaitingReduxPlugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
-        int settingsTypesCount = reader.ReadInt32();
-        for (int i = 0; i < settingsTypesCount; i++)
-        {
-            string typeName = reader.ReadString();
-            Type settingsType = assembly.GetType(typeName);
             RegisterSettingsType(ppManager, settingsType, settingsType.GetCustomAttribute<PostProcessAttribute>(false));
         }
         return true;
