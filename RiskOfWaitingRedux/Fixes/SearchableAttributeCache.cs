@@ -5,6 +5,9 @@ using System.Reflection;
 
 namespace RiskOfWaitingRedux.Fixes;
 
+// SearchableAttribute uses a lot of reflection to search for members which is very slow
+// Fix: do the search once per assembly and save the results to a cache file
+// On subsequent loads, re-use the results in the cache file, unless the assembly has been modified
 public static class SearchableAttributeCache
 {
     private static string cacheDirectory;
@@ -195,34 +198,6 @@ public static class SearchableAttributeCache
             RiskOfWaitingReduxPlugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
             cachedTypeTargets = CacheHelpers.ReadTypeCollection(reader, assembly);
             cachedMemberTargets = CacheHelpers.ReadMembersCollection(reader, assembly, GetScannableMembersFromType);
-#if false
-            int typeTargetsCount = reader.ReadInt32();
-            for (int i = 0; i < typeTargetsCount; i++)
-            {
-                string typeName = reader.ReadString();
-                Type type = assembly.GetType(typeName);
-                foreach (var attribute in GetSearchableAttributesOnMember(type))
-                {
-                    cachedSearchableAttributes.Add((attribute, type));
-                }
-            }
-            int memberTargetsCount = reader.ReadInt32();
-            for (int i = 0; i < memberTargetsCount; i++)
-            {
-                string typeName = reader.ReadString();
-                Type type = assembly.GetType(typeName);
-                var typeMembers = GetScannableMembersFromType(type);
-                int memberIndicesCount = reader.ReadUInt16();
-                for (int j = 0; j < memberIndicesCount; j++)
-                {
-                    var member = typeMembers[reader.ReadUInt16()];
-                    foreach (var attribute in GetSearchableAttributesOnMember(member))
-                    {
-                        cachedSearchableAttributes.Add((attribute, member));
-                    }
-                }
-            }
-#endif
         }
         catch (Exception ex)
         {

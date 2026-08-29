@@ -1,7 +1,6 @@
 ﻿using BepInEx.Logging;
 using HarmonyLib;
 using HG.Reflection;
-using MonoMod.Utils;
 using RoR2;
 using RoR2.ConVar;
 using System.Collections;
@@ -11,8 +10,13 @@ using Console = RoR2.Console;
 
 namespace RiskOfWaitingRedux.Fixes;
 
+// The ConVar system uses a lot of reflection to search for fields and methods which is very slow
+// Fix: do the search once per assembly and save the results to a cache file
+// On subsequent loads, re-use the results in the cache file, unless the assembly has been modified
 public static class ConVarsCache
 {
+    // very few mods have convar fields, and nothing uses convar provider methods
+    // writing only this byte flag saves space vs. always writing two "count" shorts which would usually be 0 
     [Flags]
     public enum ConVarCacheFlags : byte
     {
@@ -26,15 +30,12 @@ public static class ConVarsCache
     public static void Init()
     {
         cacheDirectory = CacheHelpers.GetCacheDirectory("ConVarsCache");
-        /*RiskOfWaitingReduxPlugin.Logger.LogMessage($"ConVarsCache: {typeof(RoR2.Console).
-                    GetNestedTypes(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).
-                    FirstOrDefault(t => t.Name.Contains(nameof(RoR2.Console.InitConVarsCoroutine))).FullName}");*/
-
-        
         Directory.CreateDirectory(cacheDirectory);
         RiskOfWaitingReduxPlugin.Harmony.PatchAll(typeof(ConVarsCache));
     }
 
+    // FixConVar in RoR2BepInExPack is probably supposed to be hooking InitConVarsCoroutine, but it actually hooks InternalInitConVarsCoroutine
+    // So, this prefix totally bypasses it
     [HarmonyPrefix, HarmonyPatch(typeof(Console), nameof(Console.InternalInitConVarsCoroutine))]
     private static bool ReplaceInternalInitConVarsCoroutine(Console __instance, ref IEnumerator __result)
     {
@@ -43,7 +44,6 @@ public static class ConVarsCache
         __instance.maxPassesBeforeYielding = 100;
 
         InitConVarsFromCache(__instance);
-        //__result = InitConVarsFromCacheCoroutine(__instance);
 
         return false;
     }

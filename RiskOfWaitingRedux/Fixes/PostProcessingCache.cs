@@ -5,6 +5,11 @@ using UnityEngine.Rendering.PostProcessing;
 
 namespace RiskOfWaitingRedux.Fixes;
 
+// When the PostProcessManager inits, it scans every type in EVERY assembly to find PostProcessEffectSettings types
+// This is obviously very slow, and also loads otherwise unused assemblies like the legacy MMHOOK dll, which massively inflates load times
+// Fix: Filter out MMHOOK assemblies; only search assemblies which directly depend on Unity.Postprocessing.Runtime (including itself)
+// We also implement a cache for the type search, but it only *slightly* outperforms the properly filtered type search (~10ms for me)
+// The cache is only worth it because we are hooking PostProcessManager.ReloadBaseTypes anyway
 public static class PostProcessingCache
 {
     private static string cacheDirectory;
@@ -31,6 +36,7 @@ public static class PostProcessingCache
 
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
+            // This mod needs to depend on Unity.Postprocessing.Runtime, but it will never include PostProcessEffectSettings
             if (CacheHelpers.IsLikelyMMHOOKAssembly(assembly) || assembly == riskOfWaitingReduxAssembly)
             {
                 continue;
