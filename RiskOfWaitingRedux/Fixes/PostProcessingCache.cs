@@ -20,17 +20,18 @@ public static class PostProcessingCache
     [HarmonyPrefix, HarmonyPatch(typeof(PostProcessManager), nameof(PostProcessManager.ReloadBaseTypes))]
     private static bool ReloadBaseTypesFromCache(PostProcessManager __instance)
     {
-        RiskOfWaitingReduxPlugin.Logger.LogMessage("Attempt ReloadBaseTypes");
+        //RiskOfWaitingReduxPlugin.Logger.LogMessage("Attempt ReloadBaseTypes");
         __instance.CleanBaseTypes();
 
         Assembly postProcessingAssembly = typeof(PostProcessEffectSettings).Assembly;
+        Assembly riskOfWaitingReduxAssembly = typeof(PostProcessingCache).Assembly;
         HandleAssembly(__instance, postProcessingAssembly);
         
         string postProcessingAssemblyName = postProcessingAssembly.GetName().Name;
 
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
-            if (CacheHelpers.IsLikelyMMHOOKAssembly(assembly))
+            if (CacheHelpers.IsLikelyMMHOOKAssembly(assembly) || assembly == riskOfWaitingReduxAssembly)
             {
                 continue;
             }
@@ -58,13 +59,15 @@ public static class PostProcessingCache
     {
         string cachePath = Path.Combine(cacheDirectory, assembly.FullName);
 
+
         if (!TryLoadFromCache(ppManager, assembly, cachePath))
         {
-            CreateCache(ppManager, assembly, cachePath);
+            List<Type> settingsTypes = RegisterSettingsTypesInAssembly(ppManager, assembly);
+            CreateCache(assembly, cachePath, settingsTypes);
         }
     }
 
-    private static void CreateCache(PostProcessManager ppManager, Assembly assembly, string cachePath)
+    private static void CreateCache(Assembly assembly, string cachePath, List<Type> settingsTypes)
     {
         RiskOfWaitingReduxPlugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
 
@@ -73,7 +76,6 @@ public static class PostProcessingCache
 
         CacheHelpers.WriteAssemblyIdentifer(writer, assembly);
 
-        List<Type> settingsTypes = RegisterSettingsTypesInAssembly(ppManager, assembly);
 
         CacheHelpers.WriteTypeCollection(writer, settingsTypes);
     }
@@ -113,13 +115,13 @@ public static class PostProcessingCache
             using FileStream fileStream = File.OpenRead(cachePath);
             using BinaryReader reader = new BinaryReader(fileStream);
 
-            if (CacheHelpers.ReadAssemblyIsOutdated(reader, assembly))
+            if (CacheHelpers.ReadAssemblyWasModified(reader, assembly))
             {
                 RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
                 return false;
             }
 
-            RiskOfWaitingReduxPlugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
+            //RiskOfWaitingReduxPlugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
             cachedSettingsTypes = CacheHelpers.ReadTypeCollection(reader, assembly);
         }
         catch (Exception ex)

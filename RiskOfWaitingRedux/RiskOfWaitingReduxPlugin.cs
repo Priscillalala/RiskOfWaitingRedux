@@ -14,7 +14,7 @@ public class RiskOfWaitingReduxPlugin : BaseUnityPlugin
     public const string
         GUID = "groovesalad." + NAME,
         NAME = "RiskOfWaitingRedux",
-        VERSION = "1.0.0";
+        VERSION = "1.0.1";
 
     public static RiskOfWaitingReduxPlugin Instance { get; private set; }
     public static new ManualLogSource Logger { get; private set; }
@@ -34,6 +34,9 @@ public class RiskOfWaitingReduxPlugin : BaseUnityPlugin
         Init();
         PostProcessingCache.Init();
         SearchableAttributeCache.Init();
+        ConVarsCache.Init();
+        EntityStateCatalogFix.Init();
+        //LogBookInitFix.Init();
         /*TestingTheWaters.Init();
         PostProcessingFix.Init();
         AchievementManagerFix.Init();

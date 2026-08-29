@@ -27,7 +27,7 @@ public static class CacheHelpers
         writer.Write(assembly.ManifestModule.ModuleVersionId);
     }
 
-    public static bool ReadAssemblyIsOutdated(BinaryReader reader, Assembly assembly)
+    public static bool ReadAssemblyWasModified(BinaryReader reader, Assembly assembly)
     {
         Guid cachedVersionId = reader.ReadGuid();
         return assembly.ManifestModule.ModuleVersionId != cachedVersionId;
@@ -49,7 +49,7 @@ public static class CacheHelpers
         for (int i = 0; i < typeCollectionCount; i++)
         {
             string typeName = reader.ReadString();
-            result[i] = assembly.GetType(typeName);
+            result[i] = assembly.GetType(typeName, true);
         }
         return result;
     }
@@ -75,7 +75,7 @@ public static class CacheHelpers
         for (int i = 0; i < memberTargetsCount; i++)
         {
             string typeName = reader.ReadString();
-            Type type = assembly.GetType(typeName);
+            Type type = assembly.GetType(typeName, true);
             var typeMembers = getTypeMembers(type);
             int memberIndicesCount = reader.ReadUInt16();
             for (int j = 0; j < memberIndicesCount; j++)
@@ -94,5 +94,10 @@ public static class CacheHelpers
     public static string GetCacheDirectory(string cacheName)
     {
         return Path.Combine(Environment.CurrentDirectory, RiskOfWaitingReduxPlugin.NAME, cacheName);
+    }
+
+    public static int GetSerializableMembersCount(Array members)
+    {
+        return Math.Min(members.Length, ushort.MaxValue);
     }
 }

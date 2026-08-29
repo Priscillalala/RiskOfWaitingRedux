@@ -33,7 +33,8 @@ public static class SearchableAttributeCache
 
         if (!TryLoadFromCache(assembly, cachePath))
         {
-            CreateCache(assembly, cachePath);
+            RegisterAttributesInAssembly(assembly, RiskOfWaitingReduxPlugin.Logger, out var typeTargets, out var memberTargets);
+            CreateCache(assembly, cachePath, typeTargets, memberTargets);
         }
 
         return false;
@@ -95,8 +96,8 @@ public static class SearchableAttributeCache
                     Environment.NewLine +
                     ex);
             }
-            int safeMembersLength = Math.Min(typeMembers.Length, ushort.MaxValue);
-            for (ushort s = 0; s < safeMembersLength; s++)
+            int safeMembersCount = CacheHelpers.GetSerializableMembersCount(typeMembers);
+            for (ushort s = 0; s < safeMembersCount; s++)
             {
                 var member = typeMembers[s];
                 var memberSearchableAttributes = Array.Empty<SearchableAttribute>();
@@ -156,7 +157,7 @@ public static class SearchableAttributeCache
         return type.GetMembers(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
     }
 
-    private static void CreateCache(Assembly assembly, string cachePath)
+    private static void CreateCache(Assembly assembly, string cachePath, List<Type> typeTargets, List<CacheHelpers.SerializableMembers> memberTargets)
     {
         RiskOfWaitingReduxPlugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
 
@@ -164,8 +165,6 @@ public static class SearchableAttributeCache
         using BinaryWriter writer = new BinaryWriter(fileStream);
 
         CacheHelpers.WriteAssemblyIdentifer(writer, assembly);
-
-        RegisterAttributesInAssembly(assembly, RiskOfWaitingReduxPlugin.Logger, out var typeTargets, out var memberTargets);
 
         CacheHelpers.WriteTypeCollection(writer, typeTargets);
         CacheHelpers.WriteMembersCollection(writer, memberTargets);
@@ -187,7 +186,7 @@ public static class SearchableAttributeCache
             using FileStream fileStream = File.OpenRead(cachePath);
             using BinaryReader reader = new BinaryReader(fileStream);
 
-            if (CacheHelpers.ReadAssemblyIsOutdated(reader, assembly))
+            if (CacheHelpers.ReadAssemblyWasModified(reader, assembly))
             {
                 RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
                 return false;
