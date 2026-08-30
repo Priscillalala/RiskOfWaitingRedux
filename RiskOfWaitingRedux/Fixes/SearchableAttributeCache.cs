@@ -191,7 +191,6 @@ public static class SearchableAttributeCache
                 return false;
             }
 
-            Plugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
             cachedTypeTargets = CacheHelpers.ReadTypeCollection(reader, assembly);
             cachedMemberTargets = CacheHelpers.ReadMembersCollection(reader, assembly, GetScannableMembersFromType);
         }
