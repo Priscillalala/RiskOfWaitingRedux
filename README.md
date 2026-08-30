@@ -4,10 +4,10 @@ Load the game faster, thanks to some good old-fashioned optimization and caching
 Risk of Waiting makes no meaningful changes to startup functionality, and is intended to be compatible with every mod.
 
 ## Cache Files
-This mod stores cache files in your Risk of Rain 2 folder, under `/RiskofWaitingReduxData/`. 
+This mod stores cache files in your Risk of Rain 2 folder, under `/RiskofWaitingReduxData/`. They are tiny files (>1 KB per mod) and always safe to delete.
 
 ## Overview
-A brief overview of the improvements included in this mod, for fellow mod devs and other interested persons. For more info, see the source code at https://github.com/Priscillalala/RiskOfWaitingRedux (MIT licensed)
+A brief overview of the improvements included in this mod, for fellow mod devs and other interested persons. See the source code at https://github.com/Priscillalala/RiskOfWaitingRedux (MIT licensed)
 
 Process | Problem | Improvement
 -|-|-
