@@ -1,4 +1,5 @@
 ﻿global using Path = System.IO.Path;
+global using Plugin = RiskOfWaitingRedux.RiskOfWaitingReduxPlugin;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;

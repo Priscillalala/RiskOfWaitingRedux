@@ -32,7 +32,7 @@ public static class ConVarsCache
     {
         cacheDirectory = CacheHelpers.GetCacheDirectory("ConVarsCache");
         Directory.CreateDirectory(cacheDirectory);
-        RiskOfWaitingReduxPlugin.Harmony.PatchAll(typeof(ConVarsCache));
+        Plugin.Harmony.PatchAll(typeof(ConVarsCache));
     }
 
     // FixConVar in RoR2BepInExPack is probably supposed to be hooking InitConVarsCoroutine, but it actually hooks InternalInitConVarsCoroutine
@@ -40,7 +40,7 @@ public static class ConVarsCache
     [HarmonyPrefix, HarmonyPatch(typeof(Console), nameof(Console.InternalInitConVarsCoroutine))]
     private static bool ReplaceInternalInitConVarsCoroutine(Console __instance, ref IEnumerator __result)
     {
-        RiskOfWaitingReduxPlugin.Logger.LogMessage($"ConVarsCache: replacing InternalInitConVarsCoroutine");
+        Plugin.Logger.LogMessage($"ConVarsCache: replacing InternalInitConVarsCoroutine");
 
         __instance.maxPassesBeforeYielding = 100;
 
@@ -51,7 +51,7 @@ public static class ConVarsCache
 
     private static void InitConVarsFromCache(Console console)
     {
-        RiskOfWaitingReduxPlugin.Logger.LogMessage($"ConVarsCache: init con vars from cache");
+        Plugin.Logger.LogMessage($"ConVarsCache: init con vars from cache");
 
         List<CacheHelpers.SerializableMembers> conVarFieldsBuffer = [];
         List<CacheHelpers.SerializableMembers> conVarProvidersBuffer = [];
@@ -67,7 +67,7 @@ public static class ConVarsCache
 
             if (!TryLoadFromCache(console, assembly, cachePath))
             {
-                RegisterConVarsInAssembly(console, assembly, RiskOfWaitingReduxPlugin.Logger, conVarFieldsBuffer, conVarProvidersBuffer);
+                RegisterConVarsInAssembly(console, assembly, Plugin.Logger, conVarFieldsBuffer, conVarProvidersBuffer);
                 CreateCache(assembly, cachePath, conVarFieldsBuffer, conVarProvidersBuffer);
             }
 
@@ -131,20 +131,20 @@ public static class ConVarsCache
                         }
                         else if (type.GetCustomAttribute<CompilerGeneratedAttribute>() == null)
                         {
-                            RiskOfWaitingReduxPlugin.Logger.LogError($"ConVar defined as {type.Name}.{field.Name} could not be registered. " +
+                            Plugin.Logger.LogError($"ConVar defined as {type.Name}.{field.Name} could not be registered. " +
                                 $"ConVars must be static fields.");
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    RiskOfWaitingReduxPlugin.Logger.LogError(e);
+                    Plugin.Logger.LogError(e);
                 }
             }
         }
         catch (Exception ex)
         {
-            RiskOfWaitingReduxPlugin.Logger.LogError(ex);
+            Plugin.Logger.LogError(ex);
         }
         return foundAnyFields;
     }
@@ -167,12 +167,12 @@ public static class ConVarsCache
                         if (method.ReturnType != typeof(IEnumerable<BaseConVar>) ||
                             method.GetParameters().Length != 0)
                         {
-                            RiskOfWaitingReduxPlugin.Logger.LogError("ConVar provider {type.Name}.{methodInfo.Name} does not match the signature " +
+                            Plugin.Logger.LogError("ConVar provider {type.Name}.{methodInfo.Name} does not match the signature " +
                                 "\"static IEnumerable<ConVar.BaseConVar>()\".");
                         }
                         else if (!method.IsStatic)
                         {
-                            RiskOfWaitingReduxPlugin.Logger.LogError($"ConVar provider {type.Name}.{method.Name} could not be invoked. " +
+                            Plugin.Logger.LogError($"ConVar provider {type.Name}.{method.Name} could not be invoked. " +
                                 $"Methods marked with the ConVarProvider attribute must be static.");
                         }
                         else
@@ -189,13 +189,13 @@ public static class ConVarsCache
                 }
                 catch (Exception e)
                 {
-                    RiskOfWaitingReduxPlugin.Logger.LogError(e);
+                    Plugin.Logger.LogError(e);
                 }
             }
         }
         catch (Exception ex)
         {
-            RiskOfWaitingReduxPlugin.Logger.LogError(ex);
+            Plugin.Logger.LogError(ex);
         }
         return foundAnyProviderMethods;
     }
@@ -225,7 +225,7 @@ public static class ConVarsCache
 
     private static void CreateCache(Assembly assembly, string cachePath, List<CacheHelpers.SerializableMembers> conVarFields, List<CacheHelpers.SerializableMembers> conVarProviders)
     {
-        RiskOfWaitingReduxPlugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
+        Plugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
 
         using FileStream fileStream = File.OpenWrite(cachePath);
         using BinaryWriter writer = new BinaryWriter(fileStream);
@@ -263,7 +263,7 @@ public static class ConVarsCache
         {
             if (!File.Exists(cachePath))
             {
-                RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has no cache");
+                Plugin.Logger.LogMessage($"{assembly.FullName} has no cache");
                 return false;
             }
             using FileStream fileStream = File.OpenRead(cachePath);
@@ -271,11 +271,11 @@ public static class ConVarsCache
 
             if (CacheHelpers.ReadAssemblyWasModified(reader, assembly))
             {
-                RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
+                Plugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
                 return false;
             }
 
-            RiskOfWaitingReduxPlugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
+            Plugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
 
             ConVarCacheFlags conVarCacheFlags = (ConVarCacheFlags)reader.ReadByte();
             if ((conVarCacheFlags & ConVarCacheFlags.HasConVarFields) > 0)
@@ -289,7 +289,7 @@ public static class ConVarsCache
         }
         catch (Exception ex)
         {
-            RiskOfWaitingReduxPlugin.Logger.LogError($"SearchableAttributeCache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
+            Plugin.Logger.LogError($"SearchableAttributeCache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
             return false;
         }
 

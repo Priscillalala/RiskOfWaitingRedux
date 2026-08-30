@@ -10,13 +10,13 @@ public static class EntityStateCatalogFix
 {
     public static void Init()
     {
-        RiskOfWaitingReduxPlugin.Harmony.PatchAll(typeof(EntityStateCatalogFix));
+        Plugin.Harmony.PatchAll(typeof(EntityStateCatalogFix));
     }
 
     [HarmonyPostfix, HarmonyPatch(typeof(EntityStateCatalog), nameof(EntityStateCatalog.SetElements))]
     private static IEnumerator SetElementsNoYielding(IEnumerator result)
     {
-        RiskOfWaitingReduxPlugin.Logger.LogMessage("EntityStateCatalogFix is happening!");
+        Plugin.Logger.LogMessage("EntityStateCatalogFix is happening!");
         // yield one or two times to maintain a consistent framerate
         const int MAX_YIELD_ATTEMPTS_PER_FRAME = 75;
         int yieldAttemptsThisFrame = 0;
@@ -25,7 +25,7 @@ public static class EntityStateCatalogFix
             if (++yieldAttemptsThisFrame > MAX_YIELD_ATTEMPTS_PER_FRAME)
             {
                 yieldAttemptsThisFrame = 0;
-                RiskOfWaitingReduxPlugin.Logger.LogWarning("EntityStateCatalogFix is yielding!");
+                Plugin.Logger.LogWarning("EntityStateCatalogFix is yielding!");
                 yield return null;
             }
         }

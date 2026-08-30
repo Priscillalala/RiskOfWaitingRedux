@@ -93,7 +93,7 @@ public static class CacheHelpers
 
     public static string GetCacheDirectory(string cacheName)
     {
-        return Path.Combine(RiskOfWaitingReduxPlugin.DataDirectory, cacheName);
+        return Path.Combine(Plugin.DataDirectory, cacheName);
     }
 
     public static int GetSerializableMembersCount(Array members)

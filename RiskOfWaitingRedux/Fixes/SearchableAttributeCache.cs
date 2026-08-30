@@ -16,7 +16,7 @@ public static class SearchableAttributeCache
     {
         cacheDirectory = CacheHelpers.GetCacheDirectory("SearchableAttributeCache");
         Directory.CreateDirectory(cacheDirectory);
-        RiskOfWaitingReduxPlugin.Harmony.PatchAll(typeof(SearchableAttributeCache));
+        Plugin.Harmony.PatchAll(typeof(SearchableAttributeCache));
     }
 
     [HarmonyPrefix, HarmonyPatch(typeof(SearchableAttribute), nameof(SearchableAttribute.ScanAssembly))]
@@ -30,13 +30,13 @@ public static class SearchableAttributeCache
         {
             return false;
         }
-        RiskOfWaitingReduxPlugin.Logger.LogMessage($"Scanning {assembly.FullName}");
+        Plugin.Logger.LogMessage($"Scanning {assembly.FullName}");
 
         string cachePath = Path.Combine(cacheDirectory, assembly.FullName);
 
         if (!TryLoadFromCache(assembly, cachePath))
         {
-            RegisterAttributesInAssembly(assembly, RiskOfWaitingReduxPlugin.Logger, out var typeTargets, out var memberTargets);
+            RegisterAttributesInAssembly(assembly, Plugin.Logger, out var typeTargets, out var memberTargets);
             CreateCache(assembly, cachePath, typeTargets, memberTargets);
         }
 
@@ -162,7 +162,7 @@ public static class SearchableAttributeCache
 
     private static void CreateCache(Assembly assembly, string cachePath, List<Type> typeTargets, List<CacheHelpers.SerializableMembers> memberTargets)
     {
-        RiskOfWaitingReduxPlugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
+        Plugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
 
         using FileStream fileStream = File.OpenWrite(cachePath);
         using BinaryWriter writer = new BinaryWriter(fileStream);
@@ -183,7 +183,7 @@ public static class SearchableAttributeCache
         {
             if (!File.Exists(cachePath))
             {
-                RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has no cache");
+                Plugin.Logger.LogMessage($"{assembly.FullName} has no cache");
                 return false;
             }
             using FileStream fileStream = File.OpenRead(cachePath);
@@ -191,17 +191,17 @@ public static class SearchableAttributeCache
 
             if (CacheHelpers.ReadAssemblyWasModified(reader, assembly))
             {
-                RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
+                Plugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
                 return false;
             }
 
-            RiskOfWaitingReduxPlugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
+            Plugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
             cachedTypeTargets = CacheHelpers.ReadTypeCollection(reader, assembly);
             cachedMemberTargets = CacheHelpers.ReadMembersCollection(reader, assembly, GetScannableMembersFromType);
         }
         catch (Exception ex)
         {
-            RiskOfWaitingReduxPlugin.Logger.LogError($"SearchableAttributeCache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
+            Plugin.Logger.LogError($"SearchableAttributeCache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
             return false;
         }
 

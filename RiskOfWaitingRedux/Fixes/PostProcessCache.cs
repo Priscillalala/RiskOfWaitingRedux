@@ -18,14 +18,14 @@ public static class PostProcessCache
     {
         cacheDirectory = CacheHelpers.GetCacheDirectory("PostProcessingCache");
         Directory.CreateDirectory(cacheDirectory);
-        RiskOfWaitingReduxPlugin.Harmony.PatchAll(typeof(PostProcessCache));
+        Plugin.Harmony.PatchAll(typeof(PostProcessCache));
     }
 
 
     [HarmonyPrefix, HarmonyPatch(typeof(PostProcessManager), nameof(PostProcessManager.ReloadBaseTypes))]
     private static bool ReloadBaseTypesFromCache(PostProcessManager __instance)
     {
-        //RiskOfWaitingReduxPlugin.Logger.LogMessage("Attempt ReloadBaseTypes");
+        //Plugin.Logger.LogMessage("Attempt ReloadBaseTypes");
         __instance.CleanBaseTypes();
 
         Assembly postProcessingAssembly = typeof(PostProcessEffectSettings).Assembly;
@@ -75,7 +75,7 @@ public static class PostProcessCache
 
     private static void CreateCache(Assembly assembly, string cachePath, List<Type> settingsTypes)
     {
-        RiskOfWaitingReduxPlugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
+        Plugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
 
         using FileStream fileStream = File.OpenWrite(cachePath);
         using BinaryWriter writer = new BinaryWriter(fileStream);
@@ -115,7 +115,7 @@ public static class PostProcessCache
         {
             if (!File.Exists(cachePath))
             {
-                RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has no cache");
+                Plugin.Logger.LogMessage($"{assembly.FullName} has no cache");
                 return false;
             }
             using FileStream fileStream = File.OpenRead(cachePath);
@@ -123,16 +123,16 @@ public static class PostProcessCache
 
             if (CacheHelpers.ReadAssemblyWasModified(reader, assembly))
             {
-                RiskOfWaitingReduxPlugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
+                Plugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
                 return false;
             }
 
-            //RiskOfWaitingReduxPlugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
+            //Plugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
             cachedSettingsTypes = CacheHelpers.ReadTypeCollection(reader, assembly);
         }
         catch (Exception ex)
         {
-            RiskOfWaitingReduxPlugin.Logger.LogError($"PostProcessingCache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
+            Plugin.Logger.LogError($"PostProcessingCache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
             return false;
         }
 
