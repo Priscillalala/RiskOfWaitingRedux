@@ -11,6 +11,7 @@ using Console = RoR2.Console;
 namespace RiskOfWaitingRedux.Fixes;
 
 // The ConVar system uses a lot of reflection to search for fields and methods which is very slow
+// Vanilla actually builds a ConVar cache (ConVarNames.txt) but doesn't use it properly. RoR2BepInExPack disables it
 // Fix: do the search once per assembly and save the results to a cache file
 // On subsequent loads, re-use the results in the cache file, unless the assembly has been modified
 public static class ConVarsCache
