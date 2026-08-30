@@ -13,13 +13,13 @@ public static class DebugTimer
     public static void Init()
     {
         RoR2Application.onLoad += OnLoadFinished;
-        RiskOfWaitingReduxPlugin.Harmony.PatchAll(typeof(DebugTimer));
+        Plugin.Harmony.PatchAll(typeof(DebugTimer));
 
     }
 
     private static void OnLoadStart()
     {
-        RiskOfWaitingReduxPlugin.Logger.LogMessage($"Start RoR2 load");
+        Plugin.Logger.LogMessage($"Start RoR2 load");
         totalLoadStopwatch = new();
         totalLoadStopwatch.Start();
         printLoadStopwatch = new();
@@ -29,7 +29,7 @@ public static class DebugTimer
     private static void OnLoadFinished()
     {
         totalLoadStopwatch.Stop();
-        RiskOfWaitingReduxPlugin.Logger.LogMessage($"Finish RoR2 load in {totalLoadStopwatch.ElapsedMilliseconds}ms");
+        Plugin.Logger.LogMessage($"Finish RoR2 load in {totalLoadStopwatch.ElapsedMilliseconds}ms");
         totalLoadStopwatch = null;
     }
 
@@ -38,9 +38,9 @@ public static class DebugTimer
     {
         if (printLoadStopwatch == null)
         {
-            RiskOfWaitingReduxPlugin.Logger.LogError("Print load null!");
+            Plugin.Logger.LogError("Print load null!");
         }
-        RiskOfWaitingReduxPlugin.Logger.LogMessage($"{message ?? "null"} {printLoadStopwatch.ElapsedMilliseconds}ms since last print");
+        Plugin.Logger.LogMessage($"{message ?? "null"} {printLoadStopwatch.ElapsedMilliseconds}ms since last print");
         printLoadStopwatch.Restart();
     }
 
@@ -57,7 +57,7 @@ public static class DebugTimer
             //}
             stopwatch.Restart();
             __instance.BehavioursToEnableDuringStartup[i].enabled = true;
-            RiskOfWaitingReduxPlugin.Logger.LogMessage($"Behaviour {__instance.BehavioursToEnableDuringStartup[i].GetType().Name} initialized in {stopwatch.ElapsedMilliseconds}ms");
+            Plugin.Logger.LogMessage($"Behaviour {__instance.BehavioursToEnableDuringStartup[i].GetType().Name} initialized in {stopwatch.ElapsedMilliseconds}ms");
         }
     }
 
