@@ -16,16 +16,18 @@ public class RiskOfWaitingReduxPlugin : BaseUnityPlugin
 
     public static new ManualLogSource Logger { get; private set; }
     public static Harmony Harmony { get; private set; }
+    public static string DataDirectory { get; private set; }
 
     private void Awake()
     {
         Logger = base.Logger;
         Harmony = new Harmony(GUID);
+        DataDirectory = Path.Combine(Environment.CurrentDirectory, NAME + "Data");
 #if DEBUG
         DebugTimer.Init();
 #endif
 #if true
-        PostProcessingCache.Init();
+        PostProcessCache.Init();
         SearchableAttributeCache.Init();
         ConVarsCache.Init();
         EntityStateCatalogFix.Init();

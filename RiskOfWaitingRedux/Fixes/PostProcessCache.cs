@@ -10,7 +10,7 @@ namespace RiskOfWaitingRedux.Fixes;
 // Fix: Filter out MMHOOK assemblies; only search assemblies which directly depend on Unity.Postprocessing.Runtime (including itself)
 // We also implement a cache for the type search, but it only *slightly* outperforms the properly filtered type search (~10ms for me)
 // The cache is only worth it because we are hooking PostProcessManager.ReloadBaseTypes anyway
-public static class PostProcessingCache
+public static class PostProcessCache
 {
     private static string cacheDirectory;
 
@@ -18,7 +18,7 @@ public static class PostProcessingCache
     {
         cacheDirectory = CacheHelpers.GetCacheDirectory("PostProcessingCache");
         Directory.CreateDirectory(cacheDirectory);
-        RiskOfWaitingReduxPlugin.Harmony.PatchAll(typeof(PostProcessingCache));
+        RiskOfWaitingReduxPlugin.Harmony.PatchAll(typeof(PostProcessCache));
     }
 
 
@@ -29,7 +29,7 @@ public static class PostProcessingCache
         __instance.CleanBaseTypes();
 
         Assembly postProcessingAssembly = typeof(PostProcessEffectSettings).Assembly;
-        Assembly riskOfWaitingReduxAssembly = typeof(PostProcessingCache).Assembly;
+        Assembly riskOfWaitingReduxAssembly = typeof(PostProcessCache).Assembly;
         HandleAssembly(__instance, postProcessingAssembly);
         
         string postProcessingAssemblyName = postProcessingAssembly.GetName().Name;
