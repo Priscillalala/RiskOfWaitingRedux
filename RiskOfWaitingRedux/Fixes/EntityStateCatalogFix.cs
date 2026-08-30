@@ -17,7 +17,6 @@ public static class EntityStateCatalogFix
     [HarmonyPostfix, HarmonyPatch(typeof(EntityStateCatalog), nameof(EntityStateCatalog.SetElements))]
     private static IEnumerator SetElementsNoYielding(IEnumerator result)
     {
-        Plugin.Logger.LogMessage("EntityStateCatalogFix is happening!");
         // yield one or two times to maintain a consistent framerate
         // this is the equivalent of yielding after every 600 configurations are applied, since the original coroutine already yields 1 in 10
         const int MAX_YIELD_ATTEMPTS_PER_FRAME = 80;
@@ -27,7 +26,6 @@ public static class EntityStateCatalogFix
             if (++yieldAttemptsThisFrame > MAX_YIELD_ATTEMPTS_PER_FRAME)
             {
                 yieldAttemptsThisFrame = 0;
-                Plugin.Logger.LogWarning("EntityStateCatalogFix is yielding!");
                 yield return null;
             }
         }

@@ -1,5 +1,4 @@
-﻿using BepInEx.Logging;
-using HarmonyLib;
+﻿using HarmonyLib;
 using HG.Reflection;
 using System.Reflection;
 
@@ -30,13 +29,12 @@ public static class SearchableAttributeCache
         {
             return false;
         }
-        Plugin.Logger.LogMessage($"Scanning {assembly.FullName}");
 
         string cachePath = Path.Combine(cacheDirectory, assembly.FullName);
 
         if (!TryLoadFromCache(assembly, cachePath))
         {
-            RegisterAttributesInAssembly(assembly, Plugin.Logger, out var typeTargets, out var memberTargets);
+            RegisterAttributesInAssembly(assembly, out var typeTargets, out var memberTargets);
             CreateCache(assembly, cachePath, typeTargets, memberTargets);
         }
 
@@ -48,7 +46,7 @@ public static class SearchableAttributeCache
         return (SearchableAttribute[])Attribute.GetCustomAttributes(member, typeof(SearchableAttribute), false);
     }
 
-    private static void RegisterAttributesInAssembly(Assembly assembly, ManualLogSource logger, out List<Type> typeTargets, out List<CacheHelpers.SerializableMembers> memberTargets)
+    private static void RegisterAttributesInAssembly(Assembly assembly, out List<Type> typeTargets, out List<CacheHelpers.SerializableMembers> memberTargets)
     {
         typeTargets = [];
         memberTargets = [];
@@ -62,7 +60,7 @@ public static class SearchableAttributeCache
             }
             catch (Exception ex)
             {
-                logger.LogDebug("ScanAssembly GetSearchableAttributesOnMember failed for :  " + type.FullName + Environment.NewLine + ex);
+                Plugin.Logger.LogDebug("ScanAssembly GetSearchableAttributesOnMember failed for :  " + type.FullName + Environment.NewLine + ex);
             }
             if (typeSearchableAttributes.Length > 0)
             {
@@ -76,7 +74,7 @@ public static class SearchableAttributeCache
                     }
                     catch (Exception ex)
                     {
-                        logger.LogDebug("SearchableAttribute.RegisterAttribute(attribute, type) failed for : " +
+                        Plugin.Logger.LogDebug("SearchableAttribute.RegisterAttribute(attribute, type) failed for : " +
                             type.FullName +
                             Environment.NewLine +
                             ex);
@@ -94,7 +92,7 @@ public static class SearchableAttributeCache
             }
             catch (Exception ex)
             {
-                logger.LogDebug("type.GetMembers failed for : " +
+                Plugin.Logger.LogDebug("type.GetMembers failed for : " +
                     type.FullName +
                     Environment.NewLine +
                     ex);
@@ -110,7 +108,7 @@ public static class SearchableAttributeCache
                 }
                 catch (Exception ex)
                 {
-                    logger.LogDebug("GetSearchableAttributesOnMember failed for : " +
+                    Plugin.Logger.LogDebug("GetSearchableAttributesOnMember failed for : " +
                         type.FullName +
                         Environment.NewLine +
                         member.Name +
@@ -134,7 +132,7 @@ public static class SearchableAttributeCache
                         }
                         catch (Exception ex)
                         {
-                            logger.LogDebug("SearchableAttribute.RegisterAttribute(attribute, memberInfo) failed for : " +
+                            Plugin.Logger.LogDebug("SearchableAttribute.RegisterAttribute(attribute, memberInfo) failed for : " +
                                 type.FullName +
                                 Environment.NewLine +
                                 member.Name +
@@ -162,8 +160,6 @@ public static class SearchableAttributeCache
 
     private static void CreateCache(Assembly assembly, string cachePath, List<Type> typeTargets, List<CacheHelpers.SerializableMembers> memberTargets)
     {
-        Plugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
-
         using FileStream fileStream = File.OpenWrite(cachePath);
         using BinaryWriter writer = new BinaryWriter(fileStream);
 
@@ -183,7 +179,7 @@ public static class SearchableAttributeCache
         {
             if (!File.Exists(cachePath))
             {
-                Plugin.Logger.LogMessage($"{assembly.FullName} has no cache");
+                Plugin.Logger.LogError($"SearchableAttribute cache for {assembly.FullName} doesn't exist - creating new cache");
                 return false;
             }
             using FileStream fileStream = File.OpenRead(cachePath);
@@ -191,7 +187,7 @@ public static class SearchableAttributeCache
 
             if (CacheHelpers.ReadAssemblyWasModified(reader, assembly))
             {
-                Plugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
+                Plugin.Logger.LogError($"SearchableAttribute cache for {assembly.FullName} is outdated - creating new cache");
                 return false;
             }
 
@@ -201,7 +197,7 @@ public static class SearchableAttributeCache
         }
         catch (Exception ex)
         {
-            Plugin.Logger.LogError($"SearchableAttributeCache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
+            Plugin.Logger.LogError($"SearchableAttribute cache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
             return false;
         }
 

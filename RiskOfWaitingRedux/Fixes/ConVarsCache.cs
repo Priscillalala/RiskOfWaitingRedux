@@ -1,5 +1,4 @@
-﻿using BepInEx.Logging;
-using HarmonyLib;
+﻿using HarmonyLib;
 using HG.Reflection;
 using RoR2;
 using RoR2.ConVar;
@@ -40,8 +39,6 @@ public static class ConVarsCache
     [HarmonyPrefix, HarmonyPatch(typeof(Console), nameof(Console.InternalInitConVarsCoroutine))]
     private static bool ReplaceInternalInitConVarsCoroutine(Console __instance, ref IEnumerator __result)
     {
-        Plugin.Logger.LogMessage($"ConVarsCache: replacing InternalInitConVarsCoroutine");
-
         __instance.maxPassesBeforeYielding = 100;
 
         InitConVarsFromCache(__instance);
@@ -51,8 +48,6 @@ public static class ConVarsCache
 
     private static void InitConVarsFromCache(Console console)
     {
-        Plugin.Logger.LogMessage($"ConVarsCache: init con vars from cache");
-
         List<CacheHelpers.SerializableMembers> conVarFieldsBuffer = [];
         List<CacheHelpers.SerializableMembers> conVarProvidersBuffer = [];
 
@@ -67,7 +62,7 @@ public static class ConVarsCache
 
             if (!TryLoadFromCache(console, assembly, cachePath))
             {
-                RegisterConVarsInAssembly(console, assembly, Plugin.Logger, conVarFieldsBuffer, conVarProvidersBuffer);
+                RegisterConVarsInAssembly(console, assembly, conVarFieldsBuffer, conVarProvidersBuffer);
                 CreateCache(assembly, cachePath, conVarFieldsBuffer, conVarProvidersBuffer);
             }
 
@@ -78,14 +73,14 @@ public static class ConVarsCache
         AudioManager.cvVolumeMaster.fallbackString = AudioManager.cvVolumeMaster.GetString();
     }
 
-    private static void RegisterConVarsInAssembly(Console console, Assembly assembly, ManualLogSource logger, List<CacheHelpers.SerializableMembers> conVarFieldsResult, List<CacheHelpers.SerializableMembers> conVarProvidersResult)
+    private static void RegisterConVarsInAssembly(Console console, Assembly assembly, List<CacheHelpers.SerializableMembers> conVarFieldsResult, List<CacheHelpers.SerializableMembers> conVarProvidersResult)
     {
         conVarFieldsResult.Clear();
         conVarProvidersResult.Clear();
 
         foreach (var type in assembly.GetTypes())
         {
-            if (TryRegisterConVarFields(console, type, logger, out var conVarFieldIndices))
+            if (TryRegisterConVarFields(console, type, out var conVarFieldIndices))
             {
                 conVarFieldsResult.Add(new CacheHelpers.SerializableMembers
                 {
@@ -93,7 +88,7 @@ public static class ConVarsCache
                     membersIndices = conVarFieldIndices
                 });
             }
-            if (TryRegisterConVarProviderMethods(console, type, logger, out var conVarProviderMethodIndices))
+            if (TryRegisterConVarProviderMethods(console, type, out var conVarProviderMethodIndices))
             {
                 conVarProvidersResult.Add(new CacheHelpers.SerializableMembers
                 {
@@ -104,7 +99,7 @@ public static class ConVarsCache
         }
     }
 
-    private static bool TryRegisterConVarFields(Console console, Type type, ManualLogSource logger, out List<ushort> conVarFieldIndices)
+    private static bool TryRegisterConVarFields(Console console, Type type, out List<ushort> conVarFieldIndices)
     {
         bool foundAnyFields = false;
         conVarFieldIndices = null;
@@ -136,20 +131,20 @@ public static class ConVarsCache
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Plugin.Logger.LogError(e);
+                    Plugin.Logger.LogError($"TryRegisterConVarFields failed for field {type.FullName}.{field.Name}: {ex}");
                 }
             }
         }
         catch (Exception ex)
         {
-            Plugin.Logger.LogError(ex);
+            Plugin.Logger.LogError($"TryRegisterConVarFields failed for type {type.FullName}: {ex}");
         }
         return foundAnyFields;
     }
 
-    private static bool TryRegisterConVarProviderMethods(Console console, Type type, ManualLogSource logger, out List<ushort> conVarProviderMethodIndices)
+    private static bool TryRegisterConVarProviderMethods(Console console, Type type, out List<ushort> conVarProviderMethodIndices)
     {
         bool foundAnyProviderMethods = false;
         conVarProviderMethodIndices = null;
@@ -187,15 +182,15 @@ public static class ConVarsCache
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Plugin.Logger.LogError(e);
+                    Plugin.Logger.LogError($"TryRegisterConVarProviderMethods failed for method {type.FullName}.{method.Name}: {ex}");
                 }
             }
         }
         catch (Exception ex)
         {
-            Plugin.Logger.LogError(ex);
+            Plugin.Logger.LogError($"TryRegisterConVarProviderMethods failed for type {type.FullName}: {ex}");
         }
         return foundAnyProviderMethods;
     }
@@ -225,8 +220,6 @@ public static class ConVarsCache
 
     private static void CreateCache(Assembly assembly, string cachePath, List<CacheHelpers.SerializableMembers> conVarFields, List<CacheHelpers.SerializableMembers> conVarProviders)
     {
-        Plugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
-
         using FileStream fileStream = File.OpenWrite(cachePath);
         using BinaryWriter writer = new BinaryWriter(fileStream);
 
@@ -263,7 +256,7 @@ public static class ConVarsCache
         {
             if (!File.Exists(cachePath))
             {
-                Plugin.Logger.LogMessage($"{assembly.FullName} has no cache");
+                Plugin.Logger.LogInfo($"ConVars cache for {assembly.FullName} doesn't exist - creating new cache");
                 return false;
             }
             using FileStream fileStream = File.OpenRead(cachePath);
@@ -271,11 +264,9 @@ public static class ConVarsCache
 
             if (CacheHelpers.ReadAssemblyWasModified(reader, assembly))
             {
-                Plugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
+                Plugin.Logger.LogInfo($"ConVars cache for {assembly.FullName} is outdated - creating new cache");
                 return false;
             }
-
-            Plugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
 
             ConVarCacheFlags conVarCacheFlags = (ConVarCacheFlags)reader.ReadByte();
             if ((conVarCacheFlags & ConVarCacheFlags.HasConVarFields) > 0)
@@ -289,7 +280,7 @@ public static class ConVarsCache
         }
         catch (Exception ex)
         {
-            Plugin.Logger.LogError($"SearchableAttributeCache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
+            Plugin.Logger.LogError($"ConVars cache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
             return false;
         }
 

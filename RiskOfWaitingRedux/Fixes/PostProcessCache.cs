@@ -25,7 +25,6 @@ public static class PostProcessCache
     [HarmonyPrefix, HarmonyPatch(typeof(PostProcessManager), nameof(PostProcessManager.ReloadBaseTypes))]
     private static bool ReloadBaseTypesFromCache(PostProcessManager __instance)
     {
-        //Plugin.Logger.LogMessage("Attempt ReloadBaseTypes");
         __instance.CleanBaseTypes();
 
         Assembly postProcessingAssembly = typeof(PostProcessEffectSettings).Assembly;
@@ -75,8 +74,6 @@ public static class PostProcessCache
 
     private static void CreateCache(Assembly assembly, string cachePath, List<Type> settingsTypes)
     {
-        Plugin.Logger.LogMessage($"Creating new cache for {assembly.FullName}");
-
         using FileStream fileStream = File.OpenWrite(cachePath);
         using BinaryWriter writer = new BinaryWriter(fileStream);
 
@@ -115,7 +112,7 @@ public static class PostProcessCache
         {
             if (!File.Exists(cachePath))
             {
-                Plugin.Logger.LogMessage($"{assembly.FullName} has no cache");
+                Plugin.Logger.LogError($"PostProcessing cache for {assembly.FullName} doesn't exist - creating new cache");
                 return false;
             }
             using FileStream fileStream = File.OpenRead(cachePath);
@@ -123,16 +120,15 @@ public static class PostProcessCache
 
             if (CacheHelpers.ReadAssemblyWasModified(reader, assembly))
             {
-                Plugin.Logger.LogMessage($"{assembly.FullName} has an outdated cache");
+                Plugin.Logger.LogError($"PostProcessing cache for {assembly.FullName} is outdated - creating new cache");
                 return false;
             }
 
-            //Plugin.Logger.LogMessage($"Using cache for {assembly.FullName}");
             cachedSettingsTypes = CacheHelpers.ReadTypeCollection(reader, assembly);
         }
         catch (Exception ex)
         {
-            Plugin.Logger.LogError($"PostProcessingCache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
+            Plugin.Logger.LogError($"PostProcessing cache for {assembly.FullName} is likely corrupted - creating new cache: {ex}");
             return false;
         }
 
