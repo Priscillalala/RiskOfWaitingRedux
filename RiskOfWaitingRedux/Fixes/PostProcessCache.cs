@@ -112,7 +112,7 @@ public static class PostProcessCache
         {
             if (!File.Exists(cachePath))
             {
-                Plugin.Logger.LogError($"PostProcessing cache for {assembly.FullName} doesn't exist - creating new cache");
+                Plugin.Logger.LogInfo($"PostProcessing cache for {assembly.FullName} doesn't exist - creating new cache");
                 return false;
             }
             using FileStream fileStream = File.OpenRead(cachePath);
@@ -120,7 +120,7 @@ public static class PostProcessCache
 
             if (CacheHelpers.ReadAssemblyWasModified(reader, assembly))
             {
-                Plugin.Logger.LogError($"PostProcessing cache for {assembly.FullName} is outdated - creating new cache");
+                Plugin.Logger.LogInfo($"PostProcessing cache for {assembly.FullName} is outdated - creating new cache");
                 return false;
             }
 

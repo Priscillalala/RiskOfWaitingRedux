@@ -179,7 +179,7 @@ public static class SearchableAttributeCache
         {
             if (!File.Exists(cachePath))
             {
-                Plugin.Logger.LogError($"SearchableAttribute cache for {assembly.FullName} doesn't exist - creating new cache");
+                Plugin.Logger.LogInfo($"SearchableAttribute cache for {assembly.FullName} doesn't exist - creating new cache");
                 return false;
             }
             using FileStream fileStream = File.OpenRead(cachePath);
@@ -187,7 +187,7 @@ public static class SearchableAttributeCache
 
             if (CacheHelpers.ReadAssemblyWasModified(reader, assembly))
             {
-                Plugin.Logger.LogError($"SearchableAttribute cache for {assembly.FullName} is outdated - creating new cache");
+                Plugin.Logger.LogInfo($"SearchableAttribute cache for {assembly.FullName} is outdated - creating new cache");
                 return false;
             }
 
