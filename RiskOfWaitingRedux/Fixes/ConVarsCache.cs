@@ -51,10 +51,20 @@ public static class ConVarsCache
         List<CacheHelpers.SerializableMembers> conVarFieldsBuffer = [];
         List<CacheHelpers.SerializableMembers> conVarProvidersBuffer = [];
 
+        // This blacklist is a minor deviation from RoR2BepInExPack behaviour but matches the SearchableAttribute
+        HashSet<string> visitedAssemblies = [];
+
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             if (assembly.GetCustomAttribute<SearchableAttribute.OptInAttribute>() == null)
             {
+                continue;
+            }
+
+            // UnityExplorer creates a second RoR2 assembly for some reason, which tries and fails to load the original RoR2 cache
+            if (!visitedAssemblies.Add(assembly.FullName))
+            {
+                Plugin.Logger.LogWarning($"Not scanning an assembly for ConVars because it has the same name as {assembly.FullName}");
                 continue;
             }
 

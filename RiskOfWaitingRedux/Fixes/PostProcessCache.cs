@@ -29,8 +29,12 @@ public static class PostProcessCache
 
         Assembly postProcessingAssembly = typeof(PostProcessEffectSettings).Assembly;
         Assembly riskOfWaitingReduxAssembly = typeof(PostProcessCache).Assembly;
+
+        // This blacklist is a minor deviation from vanilla behaviour but matches the SearchableAttribute
+        HashSet<string> visitedAssemblies = [postProcessingAssembly.FullName];
+
         HandleAssembly(__instance, postProcessingAssembly);
-        
+
         string postProcessingAssemblyName = postProcessingAssembly.GetName().Name;
 
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -44,6 +48,13 @@ public static class PostProcessCache
             {
                 if (referenceAssemblyName.Name == postProcessingAssemblyName)
                 {
+                    // UnityExplorer creates a second RoR2 assembly for some reason
+                    // The duplication isn't gamebreaking like with ConVars, but still worth fixing
+                    if (!visitedAssemblies.Add(assembly.FullName))
+                    {
+                        Plugin.Logger.LogWarning($"Not scanning an assembly for PostProcessing because it has the same name as {assembly.FullName}");
+                        break;
+                    }
                     HandleAssembly(__instance, assembly);
                     break;
                 }
@@ -64,7 +75,6 @@ public static class PostProcessCache
     {
         string cachePath = Path.Combine(cacheDirectory, assembly.FullName);
 
-
         if (!TryLoadFromCache(ppManager, assembly, cachePath))
         {
             List<Type> settingsTypes = RegisterSettingsTypesInAssembly(ppManager, assembly);
@@ -78,7 +88,6 @@ public static class PostProcessCache
         using BinaryWriter writer = new BinaryWriter(fileStream);
 
         CacheHelpers.WriteAssemblyIdentifer(writer, assembly);
-
 
         CacheHelpers.WriteTypeCollection(writer, settingsTypes);
     }
