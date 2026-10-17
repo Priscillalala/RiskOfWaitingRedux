@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.2
+
+### Fixed
+
+- Increase the severity of some `SearchableAttributeCache` log messages from debug to error, and adjust log messages
+
 ## 2.0.1
 
 ### Fixed

@@ -60,7 +60,7 @@ public static class SearchableAttributeCache
             }
             catch (Exception ex)
             {
-                Plugin.Logger.LogDebug("ScanAssembly GetSearchableAttributesOnMember failed for :  " + type.FullName + Environment.NewLine + ex);
+                Plugin.Logger.LogError($"{nameof(SearchableAttributeCache)}.{nameof(GetSearchableAttributesOnMember)}  failed for type :  " + type.FullName + Environment.NewLine + ex);
             }
             if (typeSearchableAttributes.Length > 0)
             {
@@ -74,7 +74,7 @@ public static class SearchableAttributeCache
                     }
                     catch (Exception ex)
                     {
-                        Plugin.Logger.LogDebug("SearchableAttribute.RegisterAttribute(attribute, type) failed for : " +
+                        Plugin.Logger.LogError("SearchableAttribute.RegisterAttribute(attribute, type) failed for : " +
                             type.FullName +
                             Environment.NewLine +
                             ex);
@@ -92,7 +92,7 @@ public static class SearchableAttributeCache
             }
             catch (Exception ex)
             {
-                Plugin.Logger.LogDebug("type.GetMembers failed for : " +
+                Plugin.Logger.LogError($"{nameof(SearchableAttributeCache)}.{nameof(GetScannableMembersFromType)} failed for : " +
                     type.FullName +
                     Environment.NewLine +
                     ex);
@@ -108,7 +108,7 @@ public static class SearchableAttributeCache
                 }
                 catch (Exception ex)
                 {
-                    Plugin.Logger.LogDebug("GetSearchableAttributesOnMember failed for : " +
+                    Plugin.Logger.LogError($"{nameof(SearchableAttributeCache)}.{nameof(GetSearchableAttributesOnMember)} failed for : " +
                         type.FullName +
                         Environment.NewLine +
                         member.Name +
@@ -132,7 +132,7 @@ public static class SearchableAttributeCache
                         }
                         catch (Exception ex)
                         {
-                            Plugin.Logger.LogDebug("SearchableAttribute.RegisterAttribute(attribute, memberInfo) failed for : " +
+                            Plugin.Logger.LogError("SearchableAttribute.RegisterAttribute(attribute, memberInfo) failed for : " +
                                 type.FullName +
                                 Environment.NewLine +
                                 member.Name +

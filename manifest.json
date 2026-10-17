@@ -1,9 +1,9 @@
 {
 	"name": "RiskOfWaiting",
-	"version_number": "2.0.1",
+	"version_number": "2.0.2",
 	"website_url": "https://github.com/Priscillalala/RiskOfWaitingRedux",
 	"description": "Launch the game posthaste with these sexy startup optimizations",
 	"dependencies": [
-		"bbepis-BepInExPack-5.4.2121"
+		"bbepis-BepInExPack-5.4.2122"
 	]
 }
