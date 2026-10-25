@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.0
+
+Some things are now part of RoR2BepInExPack, yay! You can safely delete the PostProcessingCache data at `/Risk of Rain 2/RiskOfWaitingReduxData/PostProcessingCache` since it will no longer be used.
+
+### Removed
+
+- Remove PostProcessManager fix, it has moved to RoR2BepInExPack
+- Remove PostProcessManager cache
+- Remove EntityStateCatalog fix, it has also moved to RoR2BepInExPack!
+
 ## 2.0.2
 
 ### Fixed

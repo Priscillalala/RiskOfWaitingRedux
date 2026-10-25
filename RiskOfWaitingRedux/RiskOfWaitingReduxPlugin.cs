@@ -13,7 +13,7 @@ public class RiskOfWaitingReduxPlugin : BaseUnityPlugin
     public const string
         GUID = "groovesalad." + NAME,
         NAME = "RiskOfWaitingRedux",
-        VERSION = "2.0.2";
+        VERSION = "2.1.0";
 
     public static new ManualLogSource Logger { get; private set; }
     public static Harmony Harmony { get; private set; }
@@ -28,10 +28,8 @@ public class RiskOfWaitingReduxPlugin : BaseUnityPlugin
         DebugTimer.Init();
 #endif
 #if true
-        PostProcessCache.Init();
         SearchableAttributeCache.Init();
         ConVarsCache.Init();
-        EntityStateCatalogFix.Init();
 #endif
     }
 }

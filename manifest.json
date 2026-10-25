@@ -1,6 +1,6 @@
 {
 	"name": "RiskOfWaiting",
-	"version_number": "2.0.2",
+	"version_number": "2.1.0",
 	"website_url": "https://github.com/Priscillalala/RiskOfWaitingRedux",
 	"description": "Launch the game posthaste with these sexy startup optimizations",
 	"dependencies": [

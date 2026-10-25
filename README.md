@@ -11,19 +11,22 @@ A brief overview of the improvements included in this mod, for fellow mod devs a
 
 Process | Problem | Improvement
 -|-|-
-PostProcessManager* | Scans EVERY assembly in the domain for post process effects | Only scan assemblies that reference Unity.Postprocessing.Runtime; exclude MMHOOK assemblies
-EntityStateCatalog | Waits for the next frame too often while applying entity state configurations | Yield less often
 SearchableAttribute | Uses a lot of reflection to scan types and members for attributes | Cache the search
 ConVars | Uses a lot of reflection to scan fields and methods for ConVars | Cache the search
 
-*<sub>This mod also includes a cache system for the PostProcessManager; however, the performance gains are nominal compared to any other improvement</sub>
-
-Additionally, the following AchievementManager improvements were originally built for this mod but got added to RoR2BepInExPack instead. See the PR at https://github.com/risk-of-thunder/RoR2BepInExPack/pull/48
+Additionally, the following improvements were originally built for this mod but now live in RoR2BepInExPack! See the pull requests at: 
+* https://github.com/risk-of-thunder/RoR2BepInExPack/pull/48 (AchievementManager)
+* https://github.com/risk-of-thunder/RoR2BepInExPack/pull/60 (EntityStateCatalog, PostProcessManager, and VolumeManager)
 
 Process | Problem | Improvement
 -|-|-
 AchievementManager | Waits for the next frame after processing EACH achievement type | Yield each time 100 achievements are registered
 AchievementManager | Scans assemblies which will never contain achievements | Only scan assemblies that reference RoR2; exclude MMHOOK assemblies and RoR2BepInExPack
+EntityStateCatalog | Waits for the next frame too often while applying entity state configurations | Yield less often
+PostProcessManager | Scans EVERY assembly in the domain for post process effects | Only scan assemblies that reference Unity.Postprocessing.Runtime; exclude MMHOOK assemblies
+VolumeManager* | Scans EVERY assembly in the domain for VolumeComponent types | Only scan assemblies that reference Unity.RenderPipelines.Core.Runtime; exclude MMHOOK assemblies
+
+*<sub>The VolumeManager does not init during startup; it is lazily initialized by the Winnowing of Mortality scene (`soul1`)</sub>
 
 ## Contact
 You can find me in the [RoR2 Modding Server](https://discord.gg/5MbXZvd) @groove_salad
